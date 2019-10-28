@@ -1,0 +1,55 @@
+---
+title: "DATA 607 Assignment 9"
+author: "RJM"
+date: '2019-10-26'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+# Slection of the libraries:
+```{r}
+library(httr)
+library(jsonlite)
+library(knitr)
+library(dplyr)
+library(tidyverse)
+```
+
+# The code to extract the articles based on the mention of HIV in them from the dates of Jan 01, 2016 to Oct 31, 2019.
+```{r}
+
+apikey <- '1pHIViwXgD31sA9yA5uvfIkyi8wv7Zn0'
+
+path <- "http://api.nytimes.com/svc/search/v2/articlesearch.json"
+# install.packages("httr")
+library(httr)
+r <- GET(path, query=list(q="HIV",
+                              "api-key"=apikey,
+                              "begin_date"=20160101,
+                              "end_date"=20191031))
+response <- content(r, as = "text", encoding = "UTF-8")
+
+```
+
+# Creation of a dataframe using from JSON:
+```{r}
+df <- fromJSON(response, flatten = TRUE) %>% 
+  data.frame()
+
+head(df)
+nrow(df)
+```
+# Selection and renaming of columns of interest:
+```{r}
+
+df2 <- select(df, Date = response.docs.pub_date, Source = response.docs.source, 
+              Section = response.docs.section_name, "Word Count" = response.docs.word_count,  URL =
+                response.docs.web_url)
+
+df2
+```
+
+
+
+
