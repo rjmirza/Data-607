@@ -1,0 +1,212 @@
+---
+title: "DATA607_Project1_RJM"
+author: "RJM"
+date: '2019-12-20'
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(dplyr)
+library(stringr)
+```
+
+## Regex Example 1 for extra credit in HW3
+
+The code below is the original code with the results from the book:
+
+```{r}
+strings <- c("12 Jun 2002", " 8 September 2004 ", "22-July-2009 ", "01 01 2001", "date", 
+             "02.06.2000", 
+             "xxx-yyy-zzzz", "$2,600")
+dates <- "([0-9]{1,2})[- .]([a-zA-Z]+)[- .]([0-9]{4})"
+str_detect(strings, dates)
+
+```
+
+The above results were not capturing the other two dates in the string (example from
+“Handling and processing strings in R”, p. 80)
+The following changes were made to capture other styles of dates:
+
+```{r}
+dates <- "([0-9]{1,2})[- .]\\s?([[:alnum:]]+)\\s?[- .]([0-9]{4})"
+str_detect(strings, dates)
+```
+
+## Regex Example 2 for extra credit in HW3
+
+An example to extract all the digits from a string:
+
+```{r}
+x <- "this sentence has 5 words, and 0 animal names"
+```
+
+Note that the code only returns the first digit with this str_extract:
+```{r}
+y <- str_extract(x, "\\d")
+y
+```
+Note that the code now returns all the digits with the function str_extract_all:
+```{r}
+y <- str_extract_all(x, "\\d")
+y
+```
+
+### Project 1
+Notes: This project presented various challenges. The first one was to decide how to read
+the text files. I had to consult various resources and some previous solutions to make the
+conclusion that the required data is in a line format so the best format would be to read it
+as lines (below).
+
+A quick look at the lines below will reveal that the first few lines are irrelevant and the
+meaningful data starts from line 5.
+
+```{r}
+chess_results <- readLines("/Users/rmirza/Documents/DATA607/tournamentinfo.txt")
+
+head(chess_results, 10)
+```
+
+The following line was to count the number of rows in the data which turned out be 196.
+
+```{r}
+n_rows <- length(chess_results)
+
+n_rows
+```
+
+Upon further consultation from the online sources it seemed reasonable to slice the data
+based on the information in the rows and start from the rows that have the meaningful information in them.
+The rows with that had the players’ numbers, name, and other information started from
+row 5 and repeated as every third row after.
+```{r}
+row_names <- chess_results[seq(5, n_rows, 3)]
+
+head(row_names, 10)
+```
+
+An interesting find was to keep checking for the length of the rows to ascertain the data
+matching.
+
+```{r}
+length(row_names)
+```
+
+The rows with that had the players’ states, and other information started from row 6 and
+repeated as every third row after.
+```{r}
+row_states <- chess_results[seq(6, n_rows, 3)]
+head(row_states, 10)
+```
+
+```{r}
+length(row_states)
+```
+
+To extract the players’ numbers for matching in calculating average pre rating scores:
+```{r}
+player_no <- as.integer(str_extract(row_names, "\\d+"))
+
+head(player_no, 10)
+```
+
+```{r}
+length(player_no)
+```
+
+To extract the players’ names:
+```{r}
+player_name <- as.character(str_trim (str_extract(row_names, 
+                                                  "(\\w+\\s){2,3}")))
+head(player_name, 10)
+```
+
+```{r}
+length(player_name)
+```
+To extract the players’ points:
+```{r}
+player_points <- as.numeric(str_extract(row_names,
+                                        "\\d+\\.\\d+"))
+head(player_points, 10)
+```
+
+```{r}
+length(player_points)
+```
+To extract the player numbers of the opponents:
+```{r}
+player_opponents <- str_extract_all(str_extract_all(row_names,
+                                                    "\\d+\\|"), "\\d+")
+head(player_opponents, 5)
+```
+
+```{r}
+length(player_opponents)
+```
+
+To extract the players’ states:
+```{r}
+player_state <- as.character(str_extract(row_states, "\\w+"))
+head(player_state, 5)
+```
+
+```{r}
+length(player_state)
+```
+
+To extract the players’ ratings before the tournament:
+```{r}
+player_prerating <- as.integer(str_extract(str_extract
+                                           (row_states, 
+                                             "[^\\d]\\d{3,4}[^\\d]"),
+"\\d+"))
+head(player_prerating, 5)
+```
+
+```{r}
+length(player_prerating)
+```
+
+The following code was written to calculate the average pre chess ratings of the players as asked in the question. Since there were 64 players, it was important to ensure that there were 64 iterations for the for loop and it is saved as a rounded number.
+```{r}
+avg_opp_scores <- length(player_no)
+for (i in 1:(length(player_no))) {
+avg_opp_scores[i] <-
+round(mean(player_prerating[as.numeric(unlist
+                                       (player_opponents
+                                         [player_no[i]]))]))
+}
+```
+
+A data frame was created to capture the results:
+```{r}
+df <- data.frame(player_name,player_state,
+player_points,player_prerating,avg_opp_scores)
+head(df, 5)
+```
+
+```{r}
+length(df)
+```
+Updated column names to match the requirements of the project:
+```{r}
+colnames(df) <- c("Player's Name","Player's State", 
+"Total Number of Points", "Player's Pre-Rating",
+"Average Pre Chess Rating of Opponents")
+```
+
+```{r}
+head(df, 5)
+```
+Finally, a csv file was created as per the requirements:
+```{r}
+write.csv(df, "Chess_results_Project1.csv", row.names=FALSE)
+```
+
