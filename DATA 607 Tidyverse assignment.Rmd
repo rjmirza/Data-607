@@ -1,0 +1,72 @@
+---
+title: "DATA 607 Tidyverse assignment"
+author: "RJM"
+date: "28/06/2020"
+output:
+  html_document:
+    df_print: paged
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+rm(list = ls())
+library(dplyr)
+library(tidyr)
+library(stringr)
+```
+
+### Data preparation
+
+```{r}
+ebola_df <- read.csv("https://github.com/rjmirza/Data-607/raw/master/Ebola_data.csv")
+
+summary(ebola_df)
+
+head(ebola_df)
+```
+
+### Totals cases for each country
+
+```{r}
+total_cases <- ebola_df %>% select(Country:Cumulative.no..of.confirmed..probable.and.suspected.cases)
+
+head(total_cases, 100)
+
+cases_by_country <- total_cases %>% group_by("Country" = Country) %>% summarise("Total cases" = sum(Cumulative.no..of.confirmed..probable.and.suspected.cases), "Average cases" = round(mean(Cumulative.no..of.confirmed..probable.and.suspected.cases),0))
+
+head(cases_by_country)
+```
+
+### Totals deaths for each country
+
+
+```{r}
+total_deaths <- ebola_df %>% select(Country, Date, Cumulative.no..of.confirmed..probable.and.suspected.deaths)
+
+total_deaths
+
+deaths_by_country <- total_deaths %>% group_by("Country" = Country) %>% summarise("Total deaths" = sum(Cumulative.no..of.confirmed..probable.and.suspected.deaths), "Average deaths" = round(mean(Cumulative.no..of.confirmed..probable.and.suspected.deaths),0))
+
+deaths_by_country
+```
+
+### Joining two data sets and finding the percentage of deaths
+
+```{r}
+joined_ebola_data <- inner_join(cases_by_country, deaths_by_country, by = "Country")
+
+joined_ebola_data <- joined_ebola_data %>% select(Country, `Total cases`, `Total deaths`) %>%  mutate("Percentage of deaths" =  round((`Total deaths`/`Total cases`)*100, 2))
+
+joined_ebola_data$Country <- as.character(joined_ebola_data$Country)
+joined_ebola_data$`Total cases` <- as.numeric(joined_ebola_data$`Total cases`)
+joined_ebola_data$`Total deaths` <- as.numeric(joined_ebola_data$`Total deaths`)
+joined_ebola_data$`Percentage of deaths` <- as.numeric(joined_ebola_data$`Percentage of deaths`)
+
+joined_ebola_data
+```
+
+
